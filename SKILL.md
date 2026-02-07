@@ -1,73 +1,73 @@
 ---
 name: cpp-testing
-description: 泛化 C++ 项目测试 Skill。分析项目结构、识别关键函数、根据项目意图编写测试代码。当用户需要为 C++ 项目添加单元测试、验证关键函数正确性、进行回归测试、检查协议解析器、测试网络模块时使用此 skill。支持 GoogleTest 和 Catch2 测试框架。
+description: Generalized C++ project testing skill. Analyze project structure, identify key functions, and write test code based on project intent. Use this skill when users need to add unit tests, verify key functions, perform regression testing, check protocol parsers, or test network modules for C++ projects. Supports GoogleTest and Catch2 frameworks.
 ---
 
 # C++ Testing Skill
 
-分析 C++ 项目结构，识别关键函数，生成针对性测试代码。
+Analyze C++ project structure, identify key functions, and generate targeted test code.
 
-## 工作流程
+## Workflow
 
 ```
-1. 分析项目 → 2. 函数分类 → 3. 测试策略 → 4. 测试生成 → 5. 验证执行
+1. Analyze Project → 2. Categorize Functions → 3. Test Strategy → 4. Generate Tests → 5. Verify Execution
 ```
 
 ---
 
-## 阶段 1: 项目分析
+## Phase 1: Project Analysis
 
-扫描以下内容建立项目模型：
+Scan the following content to build a project model:
 
-| 文件/目录 | 提取信息 |
+| File/Directory | Information to Extract |
 |-----------|----------|
-| `CMakeLists.txt` | 构建目标、依赖库、编译选项 |
-| `include/` | 公开 API、类定义、函数签名 |
-| `src/` | 实现细节、内部函数 |
-| `README.md` / `doc/` | 项目意图、设计目标 |
+| `CMakeLists.txt` | Build targets, dependencies, compile options |
+| `include/` | Public API, class definitions, function signatures |
+| `src/` | Implementation details, internal functions |
+| `README.md` / `doc/` | Project intent, design goals |
 
-**输出**: 模块列表 + 依赖关系
+**Output**: Module list + Dependencies
 
 ---
 
-## 阶段 2: 函数分类
+## Phase 2: Function Categorization
 
-按测试优先级分类：
+Categorize functions by test priority:
 
-| 优先级 | 类别 | 特征 | 测试重点 |
+| Priority | Category | Features | Test Focus |
 |--------|------|------|----------|
-| **P0** | 协议/解析 | `parse`, `decode`, `serialize` | 边界值、异常输入、字节序 |
-| **P1** | 核心业务 | 状态机、会话管理 | 状态转换、并发安全 |
-| **P2** | 网络 I/O | `send`, `receive`, 回调 | Mock、集成测试 |
-| **P3** | 工具类 | 配置、日志、转换 | 边界条件 |
+| **P0** | Protocol/Parsing | `parse`, `decode`, `serialize` | Boundary values, abnormal inputs, endianness |
+| **P1** | Core Business | State machine, session management | State transitions, concurrency safety |
+| **P2** | Network I/O | `send`, `receive`, callbacks | Mocking, integration testing |
+| **P3** | Utilities | Config, logging, conversion | Boundary conditions |
 
-运行 `scripts/find_key_functions.py` 辅助识别。
+Run `scripts/find_key_functions.py` for automated identification.
 
 ---
 
-## 阶段 3: 测试策略
+## Phase 3: Test Strategy
 
-### 框架选择
+### Framework Selection
 
-| 场景 | 推荐框架 | 理由 |
+| Scenario | Recommended Framework | Reason |
 |------|----------|------|
-| 已有 GoogleTest | GoogleTest | 保持一致 |
-| 新项目 | Catch2 | 单头文件、BDD 风格 |
-| 需要 Mock | GoogleMock | 与 GoogleTest 集成 |
+| Existing GoogleTest | GoogleTest | Maintain consistency |
+| New Project | Catch2 | Single header, BDD style |
+| Need Mocking | GoogleMock | Integrated with GoogleTest |
 
-### 测试模式
+### Test Patterns
 
-参考 [test_patterns.md](references/test_patterns.md)：
-- 边界值测试
-- 异常输入测试
-- 状态机测试
-- 异步代码测试
+Refer to [test_patterns.md](references/test_patterns.md):
+- Boundary value testing
+- Abnormal input testing
+- State machine testing
+- Asynchronous code testing
 
 ---
 
-## 阶段 4: 测试生成
+## Phase 4: Test Generation
 
-### 文件命名规范
+### File Naming Convention
 
 ```
 tests/
@@ -77,7 +77,7 @@ tests/
     └── <testdata>
 ```
 
-### GoogleTest 模板
+### GoogleTest Template
 
 ```cpp
 #include <gtest/gtest.h>
@@ -85,8 +85,8 @@ tests/
 
 class <Component>Test : public ::testing::Test {
 protected:
-    void SetUp() override { /* 初始化 */ }
-    void TearDown() override { /* 清理 */ }
+    void SetUp() override { /* Initialization */ }
+    void TearDown() override { /* Cleanup */ }
 };
 
 TEST_F(<Component>Test, <BehaviorDescription>) {
@@ -97,7 +97,7 @@ TEST_F(<Component>Test, <BehaviorDescription>) {
 }
 ```
 
-### Catch2 模板
+### Catch2 Template
 
 ```cpp
 #include <catch2/catch_test_macros.hpp>
@@ -115,22 +115,22 @@ TEST_CASE("<Component> <behavior>", "[<tag>]") {
 
 ---
 
-## 阶段 5: 验证执行
+## Phase 5: Verify Execution
 
-### 构建测试
+### Build Tests
 ```bash
 cmake -DBUILD_TESTING=ON ..
 cmake --build . --target all_tests
 ```
 
-### 运行测试
+### Run Tests
 ```bash
 ctest --output-on-failure
-# 或直接运行
+# Or run directly
 ./tests/<test_executable>
 ```
 
-### 覆盖率 (可选)
+### Coverage (Optional)
 ```bash
 cmake -DCMAKE_CXX_FLAGS="--coverage" ..
 lcov --capture --directory . --output-file coverage.info
@@ -139,17 +139,17 @@ genhtml coverage.info --output-directory coverage_report
 
 ---
 
-## 快速命令
+## Quick Commands
 
-| 任务 | 命令 |
+| Task | Command |
 |------|------|
-| 分析项目结构 | `python scripts/analyze_project.py <project_root>` |
-| 查找关键函数 | `python scripts/find_key_functions.py <include_dir>` |
+| Analyze project structure | `python scripts/analyze_project.py <project_root>` |
+| Find key functions | `python scripts/find_key_functions.py <include_dir>` |
 
 ---
 
-## 参考文档
+## Reference Documents
 
-- [分析工作流详解](references/analysis_workflow.md)
-- [测试模式参考](references/test_patterns.md)
-- [函数分类指南](references/function_categories.md)
+- [Analysis Workflow Details](references/analysis_workflow.md)
+- [Test Patterns Reference](references/test_patterns.md)
+- [Function Categorization Guide](references/function_categories.md)

@@ -1,13 +1,13 @@
-# 项目分析工作流
+# Project Analysis Workflow
 
-## 步骤 1: 构建配置分析
+## Step 1: Build Configuration Analysis
 
-### CMakeLists.txt 解析
+### CMakeLists.txt Parsing
 
-提取以下信息：
+Extract the following information:
 
 ```python
-# 关键模式匹配
+# Key pattern matching
 patterns = {
     'project_name': r'project\((\w+)',
     'targets': r'add_(?:executable|library)\((\w+)',
@@ -17,7 +17,7 @@ patterns = {
 }
 ```
 
-### vcpkg.json 依赖
+### vcpkg.json Dependencies
 
 ```json
 {
@@ -27,21 +27,21 @@ patterns = {
 
 ---
 
-## 步骤 2: 头文件扫描
+## Step 2: Header File Scanning
 
-### 优先扫描顺序
+### Priority Scan Order
 
-1. `include/` - 公开 API
-2. `src/*.hpp` - 内部头文件  
-3. `include/**/detail/` - 实现细节（低优先级）
+1. `include/` - Public API
+2. `src/*.hpp` - Internal headers  
+3. `include/**/detail/` - Implementation details (low priority)
 
-### 函数签名提取
+### Function Signature Extraction
 
 ```cpp
-// 识别公开函数
-// 模式: [virtual] <return_type> <name>(<params>) [const] [noexcept] [override]
+// Identify public functions
+// Pattern: [virtual] <return_type> <name>(<params>) [const] [noexcept] [override]
 
-// 示例输出:
+// Example output:
 // - bool parse(const uint8_t* data, size_t len)
 // - void setCallback(DataCallback cb)
 // - std::optional<Frame> getNextFrame()
@@ -49,30 +49,30 @@ patterns = {
 
 ---
 
-## 步骤 3: 模块边界识别
+## Step 3: Module Boundary Identification
 
-### 命名空间映射
+### Namespace Mapping
 
 ```
 namespace simple {
-    namespace net { /* 网络层 */ }
-    namespace protocol { /* 协议层 */ }
-    namespace util { /* 工具类 */ }
+    namespace net { /* Network Layer */ }
+    namespace protocol { /* Protocol Layer */ }
+    namespace util { /* Utility Classes */ }
 }
 ```
 
-### 依赖方向检查
+### Dependency Direction Check
 
 ```
-net → protocol → util  (正确)
-util → net            (错误: 循环依赖警告)
+net → protocol → util  (Correct)
+util → net            (Error: Circular dependency warning)
 ```
 
 ---
 
-## 步骤 4: 输出报告
+## Step 4: Output Report
 
-### JSON 格式
+### JSON Format
 
 ```json
 {

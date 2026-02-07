@@ -1,98 +1,98 @@
-# 函数分类指南
+# Function Categorization Guide
 
-## 分类维度
+## Categorization Dimensions
 
-### 1. 按职责分类
+### 1. By Responsibility
 
-| 类别 | 关键词 | 示例 |
+| Category | Keywords | Examples |
 |------|--------|------|
-| **解析/编码** | `parse`, `decode`, `serialize`, `deserialize` | `parseFrame()`, `decodeHeader()` |
-| **网络 I/O** | `send`, `receive`, `read`, `write`, `connect` | `asyncRead()`, `sendPacket()` |
-| **状态管理** | `set`, `get`, `update`, `transition` | `setState()`, `getStatus()` |
-| **回调/事件** | `on`, `callback`, `handler`, `notify` | `onDataReceived()`, `handleEvent()` |
-| **工具/转换** | `to`, `from`, `convert`, `format` | `toBigEndian()`, `formatTime()` |
-| **生命周期** | `init`, `start`, `stop`, `close`, `reset` | `initialize()`, `shutdown()` |
+| **Parsing/Encoding** | `parse`, `decode`, `serialize`, `deserialize` | `parseFrame()`, `decodeHeader()` |
+| **Network I/O** | `send`, `receive`, `read`, `write`, `connect` | `asyncRead()`, `sendPacket()` |
+| **State Management** | `set`, `get`, `update`, `transition` | `setState()`, `getStatus()` |
+| **Callback/Event** | `on`, `callback`, `handler`, `notify` | `onDataReceived()`, `handleEvent()` |
+| **Utility/Conversion** | `to`, `from`, `convert`, `format` | `toBigEndian()`, `formatTime()` |
+| **Lifecycle** | `init`, `start`, `stop`, `close`, `reset` | `initialize()`, `shutdown()` |
 
-### 2. 按复杂度分类
+### 2. By Complexity
 
-| 等级 | 特征 | 测试策略 |
-|------|------|----------|
-| **简单** | 纯函数、无副作用 | 单元测试、参数化测试 |
-| **中等** | 依赖内部状态 | Fixture + 状态验证 |
-| **复杂** | 异步、多线程、I/O | Mock + 集成测试 |
-
-### 3. 按风险等级分类
-
-| 等级 | 识别方式 | 测试覆盖要求 |
+| Grade | Features | Test Strategy |
 |------|----------|--------------|
-| **高风险** | 安全相关、金融计算、协议解析 | 100% 分支覆盖 |
-| **中风险** | 业务逻辑、状态机 | 主要路径 + 边界 |
-| **低风险** | 日志、格式化、辅助函数 | 基本功能验证 |
+| **Simple** | Pure functions, no side effects | Unit testing, parameterized testing |
+| **Medium** | Dependent on internal state | Fixture + State verification |
+| **Complex** | Async, multi-threaded, I/O | Mocking + Integration testing |
+
+### 3. By Risk Level
+
+| Grade | Identification | Testing Requirement |
+|------|----------|--------------|
+| **High Risk** | Security related, calculations, protocols | 100% branch coverage |
+| **Medium Risk** | Business logic, state machines | Main path + Boundaries |
+| **Low Risk** | Logging, formatting, helpers | Basic functional verification |
 
 ---
 
-## 优先级决策树
+## Priority Decision Tree
 
 ```
-函数是否处理外部输入？
-├── 是 → 解析/网络 → P0 (最高优先级)
-│   └── 边界值、恶意输入、模糊测试
-└── 否 → 是否影响核心流程？
-    ├── 是 → 业务逻辑 → P1
-    │   └── 状态转换、异常处理
-    └── 否 → 是否有副作用？
-        ├── 是 → I/O 操作 → P2
-        │   └── Mock、集成测试
-        └── 否 → 工具函数 → P3
-            └── 边界条件验证
+Does the function handle external input?
+├── Yes → Parsing/Network → P0 (Highest Priority)
+│   └── Boundary values, malicious input, fuzzing
+└── No → Does it affect core flow?
+    ├── Yes → Business logic → P1
+    │   └── State transitions, exception handling
+    └── No → Does it have side effects?
+        ├── Yes → I/O operation → P2
+        │   └── Mocking, integration testing
+        └── No → Utility function → P3
+            └── Boundary condition verification
 ```
 
 ---
 
-## 识别模式
+## Identification Patterns
 
-### 高优先级函数特征
+### High Priority Function Features
 
 ```cpp
-// P0: 直接处理外部数据
+// P0: Directly handles external data
 bool parse(const uint8_t* data, size_t len);
 Result decode(std::span<const std::byte> buffer);
 
-// P1: 状态转换
+// P1: State transitions
 void transition(State newState);
 bool handleMessage(MessageType type);
 
-// P2: I/O 操作
+// P2: I/O operations
 void asyncRead(ReadCallback cb);
 bool sendData(const Buffer& buf);
 ```
 
-### 低优先级函数特征
+### Low Priority Function Features
 
 ```cpp
-// P3: 纯工具函数
+// P3: Pure utility functions
 std::string formatTime(time_t t);
 uint32_t crc32(const void* data, size_t len);
 ```
 
 ---
 
-## 函数签名分析
+## Function Signature Analysis
 
-### 输入类型暗示
+### Input Type Hints
 
-| 参数类型 | 暗示 | 测试关注点 |
+| Parameter Type | Hint | Test Focus |
 |----------|------|------------|
-| `const uint8_t*` | 原始字节流 | 边界、字节序 |
-| `std::span<>` | 缓冲区 | 空span、越界 |
-| `std::string_view` | 文本输入 | 空串、Unicode |
-| `enum` | 状态/类型 | 无效枚举值 |
+| `const uint8_t*` | Raw byte stream | Boundaries, endianness |
+| `std::span<>` | Buffer | Empty span, out of bounds |
+| `std::string_view` | Text input | Empty string, Unicode |
+| `enum` | State/Type | Invalid enum values |
 
-### 返回类型暗示
+### Return Type Hints
 
-| 返回类型 | 暗示 | 测试关注点 |
+| Return Type | Hint | Test Focus |
 |----------|------|------------|
-| `bool` | 成功/失败 | 两种路径都覆盖 |
-| `std::optional<T>` | 可能无结果 | `std::nullopt` 情况 |
-| `Result<T, Error>` | 错误处理 | 所有错误码 |
-| `void` | 副作用 | 状态变化验证 |
+| `bool` | Success/Failure | Both paths covered |
+| `std::optional<T>` | May have no result | `std::nullopt` case |
+| `Result<T, Error>` | Error handling | All error codes |
+| `void` | Side effects | State change verification |

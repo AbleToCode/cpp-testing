@@ -2,7 +2,7 @@
 """
 C++ Project Structure Analyzer
 
-分析 C++ 项目结构，提取模块信息、依赖关系和构建目标。
+Analyzes C++ project structure to extract module information, dependencies, and build targets.
 
 Usage:
     python analyze_project.py <project_root> [--output json|text]
@@ -22,7 +22,7 @@ from dataclasses import dataclass, field, asdict
 
 @dataclass
 class Module:
-    """项目模块信息"""
+    """Project module information"""
     name: str
     namespace: str = ""
     headers: List[str] = field(default_factory=list)
@@ -32,7 +32,7 @@ class Module:
 
 @dataclass
 class BuildTarget:
-    """CMake 构建目标"""
+    """CMake build target"""
     name: str
     type: str  # executable, library
     sources: List[str] = field(default_factory=list)
@@ -40,7 +40,7 @@ class BuildTarget:
 
 @dataclass
 class ProjectInfo:
-    """项目信息摘要"""
+    """Project information summary"""
     name: str = ""
     cpp_standard: str = ""
     build_targets: List[BuildTarget] = field(default_factory=list)
@@ -49,7 +49,7 @@ class ProjectInfo:
 
 
 def parse_cmake(cmake_path: Path) -> Dict[str, Any]:
-    """解析 CMakeLists.txt 提取构建信息"""
+    """Parse CMakeLists.txt to extract build information"""
     info = {
         "project_name": "",
         "cpp_standard": "",
@@ -62,24 +62,24 @@ def parse_cmake(cmake_path: Path) -> Dict[str, Any]:
     
     content = cmake_path.read_text(encoding='utf-8', errors='ignore')
     
-    # 项目名称
+    # Project name
     match = re.search(r'project\s*\(\s*(\w+)', content, re.IGNORECASE)
     if match:
         info["project_name"] = match.group(1)
     
-    # C++ 标准
+    # C++ standard
     match = re.search(r'CMAKE_CXX_STANDARD\s+(\d+)', content)
     if match:
         info["cpp_standard"] = match.group(1)
     
-    # 构建目标
+    # Build targets
     for match in re.finditer(r'add_(executable|library)\s*\(\s*(\w+)', content, re.IGNORECASE):
         info["targets"].append({
             "type": match.group(1).lower(),
             "name": match.group(2)
         })
     
-    # 外部依赖
+    # External dependencies
     for match in re.finditer(r'find_package\s*\(\s*(\w+)', content, re.IGNORECASE):
         info["find_packages"].append(match.group(1))
     
@@ -87,14 +87,14 @@ def parse_cmake(cmake_path: Path) -> Dict[str, Any]:
 
 
 def scan_headers(include_dir: Path) -> Dict[str, Module]:
-    """扫描头文件目录，识别模块"""
+    """Scan headers directory to identify modules"""
     modules: Dict[str, Module] = {}
     
     if not include_dir.exists():
         return modules
     
     for header in include_dir.rglob("*.hpp"):
-        # 从路径推断模块名
+        # Infer module name from path
         relative = header.relative_to(include_dir)
         parts = relative.parts
         
@@ -108,7 +108,7 @@ def scan_headers(include_dir: Path) -> Dict[str, Module]:
         
         modules[module_name].headers.append(str(relative))
         
-        # 尝试提取命名空间
+        # Try to extract namespace
         try:
             content = header.read_text(encoding='utf-8', errors='ignore')
             ns_match = re.search(r'namespace\s+(\w+(?:::\w+)*)\s*\{', content)
@@ -121,7 +121,7 @@ def scan_headers(include_dir: Path) -> Dict[str, Module]:
 
 
 def scan_sources(src_dir: Path) -> List[str]:
-    """扫描源文件目录"""
+    """Scan sources directory"""
     sources = []
     
     if not src_dir.exists():
@@ -135,24 +135,24 @@ def scan_sources(src_dir: Path) -> List[str]:
 
 
 def analyze_project(project_root: str) -> ProjectInfo:
-    """分析整个项目"""
+    """Analyze the entire project"""
     root = Path(project_root)
     info = ProjectInfo()
     
-    # 解析 CMakeLists.txt
+    # Parse CMakeLists.txt
     cmake_info = parse_cmake(root / "CMakeLists.txt")
     info.name = cmake_info.get("project_name", root.name)
     info.cpp_standard = cmake_info.get("cpp_standard", "")
     info.external_deps = cmake_info.get("find_packages", [])
     
-    # 构建目标
+    # Build targets
     for target in cmake_info.get("targets", []):
         info.build_targets.append(BuildTarget(
             name=target["name"],
             type=target["type"]
         ))
     
-    # 扫描头文件
+    # Scan headers
     include_dirs = ["include", "inc", "headers"]
     for inc_dir in include_dirs:
         inc_path = root / inc_dir
@@ -161,13 +161,13 @@ def analyze_project(project_root: str) -> ProjectInfo:
             info.modules.extend(modules.values())
             break
     
-    # 扫描源文件
+    # Scan sources
     src_dirs = ["src", "source", "sources"]
     for src_dir in src_dirs:
         src_path = root / src_dir
         if src_path.exists():
             sources = scan_sources(src_path)
-            # 关联到默认模块
+            # Associate with the first module by default
             if info.modules:
                 info.modules[0].sources = sources
             break
@@ -176,27 +176,27 @@ def analyze_project(project_root: str) -> ProjectInfo:
 
 
 def format_output(info: ProjectInfo, format: str) -> str:
-    """格式化输出"""
+    """Format output results"""
     if format == "json":
         return json.dumps(asdict(info), indent=2, ensure_ascii=False)
     else:
         lines = [
-            f"项目: {info.name}",
-            f"C++ 标准: C++{info.cpp_standard}" if info.cpp_standard else "",
+            f"Project: {info.name}",
+            f"C++ Standard: C++{info.cpp_standard}" if info.cpp_standard else "",
             "",
-            "构建目标:",
+            "Build Targets:",
         ]
         for target in info.build_targets:
             lines.append(f"  - [{target.type}] {target.name}")
         
-        lines.extend(["", "模块:"])
+        lines.extend(["", "Modules:"])
         for module in info.modules:
             lines.append(f"  - {module.name} ({module.namespace or 'no namespace'})")
-            lines.append(f"    头文件: {len(module.headers)} 个")
-            lines.append(f"    源文件: {len(module.sources)} 个")
+            lines.append(f"    Headers: {len(module.headers)} files")
+            lines.append(f"    Sources: {len(module.sources)} files")
         
         if info.external_deps:
-            lines.extend(["", "外部依赖:"])
+            lines.extend(["", "External dependencies:"])
             for dep in info.external_deps:
                 lines.append(f"  - {dep}")
         
@@ -204,15 +204,15 @@ def format_output(info: ProjectInfo, format: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="C++ 项目结构分析器")
-    parser.add_argument("project_root", help="项目根目录路径")
+    parser = argparse.ArgumentParser(description="C++ Project Structure Analyzer")
+    parser.add_argument("project_root", help="Project root directory path")
     parser.add_argument("--output", choices=["json", "text"], default="text",
-                       help="输出格式")
+                       help="Output format")
     
     args = parser.parse_args()
     
     if not os.path.isdir(args.project_root):
-        print(f"错误: 目录不存在: {args.project_root}")
+        print(f"Error: Directory does not exist: {args.project_root}")
         return 1
     
     info = analyze_project(args.project_root)

@@ -2,7 +2,7 @@
 """
 C++ Key Function Finder
 
-扫描 C++ 头文件，识别关键函数并按优先级分类。
+Scans C++ headers to identify key functions and categorize them by priority.
 
 Usage:
     python find_key_functions.py <include_dir> [--output json|text]
@@ -22,9 +22,9 @@ from dataclasses import dataclass, field, asdict
 
 @dataclass
 class FunctionInfo:
-    """函数信息"""
+    """Function information"""
     name: str
-    full_name: str  # 包含类名
+    full_name: str  # Includes class name
     file: str
     line: int
     signature: str
@@ -33,27 +33,27 @@ class FunctionInfo:
     category: str  # protocol, network, business, utility
 
 
-# 关键词到类别/优先级的映射
+# Mapping keywords to category/priority
 KEYWORD_PATTERNS = {
-    # P0: 协议/解析 - 最高优先级
+    # P0: Protocol/Parsing - Highest priority
     "protocol": {
         "keywords": ["parse", "decode", "serialize", "deserialize", "encode", "unpack", "pack"],
         "priority": "P0",
         "category": "protocol"
     },
-    # P1: 核心业务
+    # P1: Core Business
     "business": {
         "keywords": ["handle", "process", "execute", "transition", "validate"],
         "priority": "P1", 
         "category": "business"
     },
-    # P2: 网络 I/O
+    # P2: Network I/O
     "network": {
         "keywords": ["send", "receive", "read", "write", "connect", "accept", "async"],
         "priority": "P2",
         "category": "network"
     },
-    # P3: 工具类
+    # P3: Utilities
     "utility": {
         "keywords": ["to", "from", "convert", "format", "get", "set", "is", "has"],
         "priority": "P3",
@@ -61,33 +61,33 @@ KEYWORD_PATTERNS = {
     }
 }
 
-# 函数签名正则
+# Regex for function signature
 FUNCTION_PATTERN = re.compile(
     r'''
-    (?:virtual\s+)?                     # virtual (可选)
-    (?:static\s+)?                      # static (可选)
-    (?:inline\s+)?                      # inline (可选)
-    ([\w:<>,\s\*&]+?)                   # 返回类型
+    (?:virtual\s+)?                     # virtual (optional)
+    (?:static\s+)?                      # static (optional)
+    (?:inline\s+)?                      # inline (optional)
+    ([\w:<>,\s\*&]+?)                   # Return type
     \s+
-    ([\w~]+)                            # 函数名
+    ([\w~]+)                            # Function name
     \s*
-    \(([^)]*)\)                         # 参数
+    \(([^)]*)\)                         # Parameters
     \s*
-    (?:const)?                          # const (可选)
-    (?:\s*noexcept)?                    # noexcept (可选)
-    (?:\s*override)?                    # override (可选)
+    (?:const)?                          # const (optional)
+    (?:\s*noexcept)?                    # noexcept (optional)
+    (?:\s*override)?                    # override (optional)
     \s*
-    (?:;|=|\{)                          # 结束
+    (?:;|=|\{)                          # End of signature
     ''',
     re.VERBOSE | re.MULTILINE
 )
 
-# 类定义正则
+# Regex for class definition
 CLASS_PATTERN = re.compile(r'(?:class|struct)\s+(\w+)\s*(?::\s*[^{]+)?\s*\{')
 
 
 def classify_function(name: str) -> tuple[str, str]:
-    """根据函数名分类"""
+    """Categorize functions based on name"""
     name_lower = name.lower()
     
     for category_name, config in KEYWORD_PATTERNS.items():
@@ -99,7 +99,7 @@ def classify_function(name: str) -> tuple[str, str]:
 
 
 def extract_functions(file_path: Path) -> List[FunctionInfo]:
-    """从头文件提取函数"""
+    """Extract functions from a header file"""
     functions = []
     
     try:
@@ -111,38 +111,38 @@ def extract_functions(file_path: Path) -> List[FunctionInfo]:
     current_class = None
     brace_depth = 0
     
-    # 简化的类跟踪
+    # Simplified class tracking
     for i, line in enumerate(lines, 1):
-        # 跟踪类定义
+        # Track class definitions
         class_match = CLASS_PATTERN.search(line)
         if class_match:
             current_class = class_match.group(1)
             brace_depth = 0
         
-        # 跟踪大括号
+        # Track braces
         brace_depth += line.count('{') - line.count('}')
         if brace_depth <= 0:
             current_class = None
             brace_depth = 0
     
-    # 重新扫描提取函数
+    # Re-scan to extract functions
     for match in FUNCTION_PATTERN.finditer(content):
         return_type = match.group(1).strip()
         func_name = match.group(2).strip()
         params = match.group(3).strip()
         
-        # 跳过构造函数/析构函数
+        # Skip constructors/destructors
         if func_name.startswith('~') or return_type == func_name:
             continue
         
-        # 跳过运算符重载
+        # Skip operator overloads
         if func_name.startswith('operator'):
             continue
         
-        # 计算行号
+        # Calculate line number
         line_num = content[:match.start()].count('\n') + 1
         
-        # 尝试确定所属类
+        # Attempt to determine parent class
         class_name = ""
         search_pos = match.start()
         for class_match in CLASS_PATTERN.finditer(content[:search_pos]):
@@ -168,18 +168,18 @@ def extract_functions(file_path: Path) -> List[FunctionInfo]:
 
 
 def scan_directory(include_dir: str) -> List[FunctionInfo]:
-    """扫描目录下所有头文件"""
+    """Scan all header files in a directory"""
     all_functions = []
     root = Path(include_dir)
     
     for header in root.rglob("*.hpp"):
         functions = extract_functions(header)
-        # 更新相对路径
+        # Update relative path
         for func in functions:
             func.file = str(header.relative_to(root))
         all_functions.extend(functions)
     
-    # 也扫描 .h 文件
+    # Also scan .h files
     for header in root.rglob("*.h"):
         functions = extract_functions(header)
         for func in functions:
@@ -190,26 +190,26 @@ def scan_directory(include_dir: str) -> List[FunctionInfo]:
 
 
 def format_output(functions: List[FunctionInfo], format: str) -> str:
-    """格式化输出"""
-    # 按优先级排序
+    """Format output results"""
+    # Sort by priority
     sorted_funcs = sorted(functions, key=lambda f: (f.priority, f.category, f.name))
     
     if format == "json":
         return json.dumps([asdict(f) for f in sorted_funcs], indent=2, ensure_ascii=False)
     else:
-        lines = ["# 关键函数列表", ""]
+        lines = ["# Key Functions List", ""]
         
-        # 按优先级分组
+        # Group by priority
         for priority in ["P0", "P1", "P2", "P3"]:
             group = [f for f in sorted_funcs if f.priority == priority]
             if not group:
                 continue
             
             priority_names = {
-                "P0": "协议/解析 (最高优先级)",
-                "P1": "核心业务",
-                "P2": "网络 I/O",
-                "P3": "工具类"
+                "P0": "Protocol/Parsing (Highest Priority)",
+                "P1": "Core Business",
+                "P2": "Network I/O",
+                "P3": "Utilities"
             }
             
             lines.extend([
@@ -219,14 +219,14 @@ def format_output(functions: List[FunctionInfo], format: str) -> str:
             
             for func in group:
                 lines.append(f"- `{func.full_name}` [{func.file}:{func.line}]")
-                lines.append(f"  - 签名: `{func.signature}`")
-                lines.append(f"  - 分类: {func.category}")
+                lines.append(f"  - Signature: `{func.signature}`")
+                lines.append(f"  - Category: {func.category}")
                 lines.append("")
         
-        # 统计
+        # Statistics
         lines.extend([
             "---",
-            f"总计: {len(functions)} 个函数",
+            f"Total: {len(functions)} functions",
             f"  P0: {len([f for f in functions if f.priority == 'P0'])}",
             f"  P1: {len([f for f in functions if f.priority == 'P1'])}",
             f"  P2: {len([f for f in functions if f.priority == 'P2'])}",
@@ -237,15 +237,15 @@ def format_output(functions: List[FunctionInfo], format: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="C++ 关键函数查找器")
-    parser.add_argument("include_dir", help="头文件目录路径")
+    parser = argparse.ArgumentParser(description="C++ Key Function Finder")
+    parser.add_argument("include_dir", help="Include directory path")
     parser.add_argument("--output", choices=["json", "text"], default="text",
-                       help="输出格式")
+                       help="Output format")
     
     args = parser.parse_args()
     
     if not os.path.isdir(args.include_dir):
-        print(f"错误: 目录不存在: {args.include_dir}")
+        print(f"Error: Directory does not exist: {args.include_dir}")
         return 1
     
     functions = scan_directory(args.include_dir)

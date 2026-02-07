@@ -1,33 +1,33 @@
-# C++ 测试模式参考
+# C++ Test Patterns Reference
 
-## GoogleTest 基础
+## GoogleTest Basics
 
-### 基本断言
+### Fundamental Assertions
 
 ```cpp
-// 布尔
+// Boolean
 EXPECT_TRUE(condition);
 EXPECT_FALSE(condition);
 
-// 相等
+// Equality
 EXPECT_EQ(expected, actual);
 EXPECT_NE(val1, val2);
 
-// 比较
+// Comparison
 EXPECT_LT(val1, val2);  // <
 EXPECT_LE(val1, val2);  // <=
 EXPECT_GT(val1, val2);  // >
 EXPECT_GE(val1, val2);  // >=
 
-// 字符串
+// Strings
 EXPECT_STREQ(str1, str2);
 EXPECT_STRCASEEQ(str1, str2);
 
-// 浮点
+// Floating point
 EXPECT_FLOAT_EQ(val1, val2);
 EXPECT_NEAR(val1, val2, abs_error);
 
-// 异常
+// Exceptions
 EXPECT_THROW(stmt, exception_type);
 EXPECT_NO_THROW(stmt);
 ```
@@ -54,7 +54,7 @@ TEST_F(ParserTest, ParsesValidFrame) {
 }
 ```
 
-### 参数化测试
+### Parameterized Testing
 
 ```cpp
 class ByteOrderTest : public ::testing::TestWithParam<std::tuple<uint32_t, std::array<uint8_t, 4>>> {};
@@ -78,9 +78,9 @@ INSTANTIATE_TEST_SUITE_P(
 
 ---
 
-## Catch2 模式
+## Catch2 Patterns
 
-### 基本语法
+### Basic Syntax
 
 ```cpp
 #include <catch2/catch_test_macros.hpp>
@@ -98,7 +98,7 @@ TEST_CASE("Parser handles valid input", "[parser]") {
 }
 ```
 
-### BDD 风格
+### BDD Style
 
 ```cpp
 SCENARIO("Client connects to server", "[net]") {
@@ -120,9 +120,9 @@ SCENARIO("Client connects to server", "[net]") {
 
 ---
 
-## 协议解析测试模式
+## Protocol Parsing Test Patterns
 
-### 边界值测试
+### Boundary Value Testing
 
 ```cpp
 TEST(ParserTest, HandlesEmptyInput) {
@@ -141,7 +141,7 @@ TEST(ParserTest, RejectsOversizedPacket) {
 }
 ```
 
-### 字节序测试
+### Endianness Testing
 
 ```cpp
 TEST(ByteUtilTest, ReadBigEndian16) {
@@ -155,21 +155,21 @@ TEST(ByteUtilTest, ReadBigEndian32) {
 }
 ```
 
-### 分片重组测试
+### Fragmentation and Reassembly Testing
 
 ```cpp
 TEST(FragmentTest, ReassemblesMultipleFragments) {
     FrameParser parser;
     
-    // 首包
+    // First packet
     parser.feed(fragment_first, len1);
     EXPECT_FALSE(parser.hasCompleteFrame());
     
-    // 中间包
+    // Middle packet
     parser.feed(fragment_middle, len2);
     EXPECT_FALSE(parser.hasCompleteFrame());
     
-    // 尾包
+    // Last packet
     parser.feed(fragment_last, len3);
     EXPECT_TRUE(parser.hasCompleteFrame());
     
@@ -180,9 +180,9 @@ TEST(FragmentTest, ReassemblesMultipleFragments) {
 
 ---
 
-## 异步代码测试
+## Asynchronous Code Testing
 
-### 使用 std::promise
+### Using std::promise
 
 ```cpp
 TEST(AsyncServerTest, AcceptsConnection) {
@@ -193,7 +193,7 @@ TEST(AsyncServerTest, AcceptsConnection) {
         connected.set_value(true);
     });
     
-    // 模拟客户端连接
+    // Mock client connection
     TcpClient client;
     client.connect("127.0.0.1", 1078);
     
@@ -202,13 +202,13 @@ TEST(AsyncServerTest, AcceptsConnection) {
 }
 ```
 
-### 超时保护
+### Timeout Protection
 
 ```cpp
-TEST(TimeoutTest, OperationCompletesInTime) {
+TEST(TimeoutTest, Operation completes in time) {
     auto start = std::chrono::steady_clock::now();
     
-    // 执行操作
+    // Perform operation
     auto result = performAsyncOperation();
     
     auto elapsed = std::chrono::steady_clock::now() - start;
@@ -218,9 +218,9 @@ TEST(TimeoutTest, OperationCompletesInTime) {
 
 ---
 
-## Mock 对象
+## Mock Objects
 
-### GoogleMock 示例
+### GoogleMock Example
 
 ```cpp
 class MockDataCallback {
@@ -228,7 +228,7 @@ public:
     MOCK_METHOD(void, onData, (const uint8_t*, size_t), ());
 };
 
-TEST(CallbackTest, InvokesCallbackOnData) {
+TEST(CallbackTest, Invokes callback on data) {
     MockDataCallback mock;
     EXPECT_CALL(mock, onData(_, Gt(0)))
         .Times(AtLeast(1));
